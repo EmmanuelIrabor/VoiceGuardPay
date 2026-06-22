@@ -1,0 +1,85 @@
+
+
+@use './fonts';
+@use './mixins';
+@use './colors';
+
+.btn-primary{
+
+    background-color: colors.$primary-500;
+    color: colors.$white;
+    padding: 0.5rem 1rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-family: "JetBrainsMono", monospace;
+
+    &:hover {
+        background-color: colors.$primary-600;
+    }
+
+
+
+}
+
+.btn-secondary{
+
+    background-color: colors.$secondary-500;
+    color: colors.$white;
+    padding: 0.5rem 1rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-family: "JetBrainsMono", monospace;
+
+    &:hover {
+        background-color: colors.$secondary-600;
+    }
+
+}
+.btn-inverted{
+
+    background-color: colors.$neutral-900;
+    color: colors.$white;
+    padding: 0.5rem 1rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-family: "JetBrainsMono", monospace;
+    &:hover {
+        background-color: colors.$neutral-800;
+    }
+
+}
+
+.btn-outlined{
+
+    background-color: transparent;
+    color: colors.$primary-500;
+    padding: 0.5rem 1rem;
+    border: 2px solid colors.$primary-500;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+     font-family: "JetBrainsMono", monospace;
+
+    &:hover {
+        background-color: colors.$primary-500;
+        color: colors.$white;
+    }
+
+}
+
+.btn-dark{
+
+    background-color: colors.$black;
+    color: colors.$white;
+    padding: 0.5rem 1rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-family: "JetBrainsMono", monospace;
+    &:hover {
+        background-color: colors.$neutral-800;
+    }
+
+}

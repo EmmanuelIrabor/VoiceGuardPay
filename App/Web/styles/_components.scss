@@ -1,0 +1,88 @@
+
+
+@use './fonts';
+@use './mixins';
+@use './colors';
+
+.language-card{
+    background-color: colors.$white;
+    border-radius: 2px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+
+    &:hover {
+        background-color: colors.$secondary-50;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+}
+
+
+.loader-x {
+  width: 20px;
+  aspect-ratio: 1;
+  background: colors.$primary-500;
+  box-shadow: 0 0 60px 15px colors.$primary-500;
+  transform: translate(-80px);
+  clip-path: inset(0);
+  animation:
+    l4-1 0.5s ease-in-out infinite alternate,
+    l4-2 1s   ease-in-out infinite;
+}
+@keyframes l4-1 {
+  100% {transform: translateX(10px)}
+}
+@keyframes l4-2 {
+   33% {clip-path: inset(0 0 0 -60px)}
+   50% {clip-path: inset(0 0 0 0)     }
+   83% {clip-path: inset(0 -60px 0 0)}
+}
+
+/* HTML: <div class="loader"></div> */
+.loader-c {
+  --s: 20px;
+  
+  --_d: calc(0.353*var(--s));
+  width: calc(var(--s) + var(--_d));
+  aspect-ratio: 1;
+  display: grid;
+}
+.loader-c:before,
+.loader-c:after {
+  content: "";
+  grid-area: 1/1;
+  clip-path: polygon(var(--_d) 0,100% 0,100% calc(100% - var(--_d)),calc(100% - var(--_d)) 100%,0 100%,0 var(--_d));
+  background:
+    conic-gradient(from -90deg at calc(100% - var(--_d)) var(--_d),
+     #fff 135deg,#666 0 270deg,#aaa 0);
+  animation: l6 2s infinite;
+}
+.loader:after {
+  animation-delay:-1s;
+}
+@keyframes l6{
+  0%  {transform:translate(0,0)}
+  25% {transform:translate(30px,0)}
+  50% {transform:translate(30px,30px)}
+  75% {transform:translate(0,30px)}
+  100%{transform:translate(0,0)}
+}
+
+.loader-s {
+    width: 15px;
+    height: 15px;
+    border: 1px solid colors.$neutral-900;
+    border-bottom-color: transparent;
+    border-radius: 50%;
+    display: inline-block;
+    box-sizing: border-box;
+    animation: rotation 1s linear infinite;
+    }
+
+    @keyframes rotation {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+    } 
