@@ -2,6 +2,7 @@
 import NavBar from "@/components/NavBar";
 import { CirclesThreePlus , Translate } from "phosphor-react";
 import LanguageCard from "@/components/ui/LanguageCard";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -57,9 +58,13 @@ export default function Home() {
 
       <div>
         <div className="flex items-center gap-4 mt-2 md:mt-0">
-          <p className="text-xs">PRIVACY_PROTOCOL</p>
-          <p className="text-xs">ENCRYPTION_STANDARDS</p>
-          </div>
+          <Link href="/privacy" className="text-xs hover:underline">
+            PRIVACY_PROTOCOL
+          </Link>
+          <Link href="/encryption" className="text-xs hover:underline">
+            ENCRYPTION_STANDARDS
+          </Link>
+        </div>
       </div>
       
     </div>
