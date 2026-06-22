@@ -16,6 +16,22 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Voice Pay Guard",
   description: "VoiceGuard Pay enables secure multilingual voice payments with real-time AI fraud detection.",
+  icons: {
+    icon: "/images/logo.svg",
+    shortcut: "/images/logo.svg",
+    apple: "/images/logo.svg",
+  },
+  openGraph: {
+    title: "Voice Pay Guard",
+    description: "VoiceGuard Pay enables secure multilingual voice payments with real-time AI fraud detection.",
+    images: ["/images/logo.svg"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Voice Pay Guard",
+    description: "VoiceGuard Pay enables secure multilingual voice payments with real-time AI fraud detection.",
+    images: ["/images/logo.svg"],
+  },
 };
 
 export default function RootLayout({
