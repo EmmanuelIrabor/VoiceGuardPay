@@ -45,7 +45,7 @@ export default function Home() {
     <button className="btn-dark text-xs">CONFIRM SELECTION</button>
   </div>
  </div>
- <p className="font-jetbrains text-xs text-primary-700 mt-1">Don't see your language? Kindly reach out to our support team.</p>
+ <p className="font-jetbrains text-xs text-primary-700 mt-2">Don't see your language? Kindly reach out to our support team.</p>
  
 
     </div>
