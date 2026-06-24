@@ -1,0 +1,91 @@
+@use './colors';
+
+$color-state-success: #16A34A;
+$color-state-warning: #D97706;
+$color-state-danger:  #DC2626;
+$color-state-info:    $primary-500;
+$color-focus-ring:    $primary-300;
+
+.notify-container {
+  position: fixed;
+  top: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 80%;
+  max-width: 56rem;
+}
+
+.notify-alert {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border: 2px solid transparent;
+  border-radius: 0.5rem;
+  padding: 1rem 2.5rem 1rem 1rem;
+  color: #fff;
+
+  &__icon {
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+  }
+
+  &__body {
+    flex: 1;
+  }
+
+  &__title {
+    font-weight: 600;
+    margin: 0 0 0.125rem;
+  }
+
+  &__message {
+    color: #fff;
+    margin: 0;
+  }
+
+  &__close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    color: #fff;
+    background: none;
+    border: none;
+    cursor: pointer;
+    flex-shrink: 0;
+
+    &:hover {
+      opacity: 0.7;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $color-focus-ring;
+      outline-offset: 2px;
+    }
+  }
+
+  &--success {
+    background-color: $color-state-success;
+    border-color: darken($color-state-success, 10%);
+  }
+
+  &--error {
+    background-color: $color-state-danger;
+    border-color: darken($color-state-danger, 10%);
+  }
+
+  &--warning {
+    background-color: $color-state-warning;
+    border-color: darken($color-state-warning, 10%);
+  }
+
+  &--neutral {
+    background-color: $color-state-info;
+    border-color: darken($color-state-info, 10%);
+  }
+}
