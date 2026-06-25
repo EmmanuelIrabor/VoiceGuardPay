@@ -4,7 +4,7 @@ import Link from "next/link";
 export default function Footer() {
 
     return (
-        <>
+        <div className="mt-auto">
          <hr className=" text-neutral-600 mt-10"/>
     <div className="mt-2 px-5 xl:px-20 pb-5 font-jetbrains text-xs text-neutral-900 flex justify-between items-center flex-wrap">
       <div>
@@ -23,6 +23,6 @@ export default function Footer() {
       </div>
       
     </div>
-        </>
+        </div>
     )
 }

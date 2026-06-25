@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useState } from "react";
 import Footer from "@/components/Footer";
 
-export default function Home() {
+export default function LanguageSelect() {
   const [selectedLanguageId, setSelectedLanguageId] = useState<string | null>(null);
   return (
     <>
@@ -21,7 +21,7 @@ export default function Home() {
 
 
       <div>
-        <h1 className="text-2xl font-medium mt-2 font-geist">Hello kindly select your lanaguage of choice.</h1>
+        <h1 className="text-2xl font-medium mt-2 font-geist typing">Hello kindly select your lanaguage of choice.</h1>
         <p className="text-xs text-neutral-800 mt-1">The system will calibrate its voice recognition algorithms based on your selection to ensure compatibility and  precision.</p>
       </div>
 

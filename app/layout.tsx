@@ -4,6 +4,7 @@ import "./globals.css";
 import "../styles/main.scss";
 import NotifyContainer from '@/components/NotifyContainer';
 
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
