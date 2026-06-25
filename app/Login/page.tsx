@@ -25,7 +25,7 @@ export default function Login() {
     try {
       const result = await loginUser({ email, password });
       localStorage.setItem("token", result.access_token);
-      notify.success("Logged in successfully.");
+      // notify.success("Logged in successfully.");
       router.push("/Home");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Invalid credentials, please try again.";
