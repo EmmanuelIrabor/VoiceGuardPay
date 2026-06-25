@@ -37,3 +37,25 @@ export async function registerUser(payload: RegisterPayload): Promise<AuthRespon
 
   return data as AuthResponse;
 }
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+export async function loginUser(payload: LoginPayload): Promise<AuthResponse> {
+  const res = await fetch(`${API_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    const error = data as ApiError;
+    throw new Error(error.detail || 'Login failed.');
+  }
+
+  return data as AuthResponse;
+}
