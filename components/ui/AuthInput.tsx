@@ -1,4 +1,5 @@
 import { LucideIcon } from "lucide-react";
+import { ChangeEvent } from "react";
 
 interface AuthInputProps {
   label: string;
@@ -6,6 +7,8 @@ interface AuthInputProps {
   type?: string;
   placeholder?: string;
   id?: string;
+  value?: string;
+  onChange?: (e: ChangeEvent<HTMLInputElement>) => void;
 }
 
 export default function AuthInput({
@@ -14,6 +17,8 @@ export default function AuthInput({
   type = "text",
   placeholder,
   id,
+  value,
+  onChange,
 }: AuthInputProps) {
   const inputId = id ?? label.toLowerCase().replace(/\s+/g, "-");
 
@@ -29,6 +34,8 @@ export default function AuthInput({
           id={inputId}
           type={type}
           placeholder={placeholder}
+          value={value}
+          onChange={onChange}
           className="bg-none focus:outline-none focus:bg-none text-xs w-full"
         />
       </div>
