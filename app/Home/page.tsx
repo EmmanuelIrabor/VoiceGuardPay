@@ -69,7 +69,7 @@ export default function Home (){
             </div>
 
 
-           <div className="flex justify-end mt-40 md:mt-30 lg:mt-0 xl:mt-0 ">
+           <div className="flex justify-end mt-30 md:mt-30 lg:mt-0 xl:mt-0 ">
   <Link href={'/'} className="w-14 h-14 rounded-full bg-primary-500 text-white shadow-xl hover:scale-105 transition flex items-center justify-center">
     <Radar size={24} />
   </Link>
