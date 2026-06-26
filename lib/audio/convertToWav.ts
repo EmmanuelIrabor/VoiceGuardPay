@@ -1,13 +1,9 @@
-/**
- * Converts a recorded audio Blob (e.g. WebM/Opus from MediaRecorder) into a
- * 16kHz mono 16-bit PCM WAV Blob — the exact format Azure Speaker Recognition requires.
- */
+
 export async function convertToWav(blob: Blob): Promise<Blob> {
   const arrayBuffer = await blob.arrayBuffer();
   const audioContext = new AudioContext();
   const decoded = await audioContext.decodeAudioData(arrayBuffer);
 
-  // Resample to 16kHz mono using an OfflineAudioContext
   const targetSampleRate = 16000;
   const offlineContext = new OfflineAudioContext(
     1, // mono

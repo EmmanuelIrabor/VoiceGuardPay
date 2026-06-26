@@ -55,38 +55,51 @@ export default function VoiceBiometrics() {
   };
 
   const uploadSample = async (blob: Blob) => {
-  setIsUploading(true);
-  try {
-    const wavBlob = await convertToWav(blob); 
+    setIsUploading(true);
+    try {
+      // Convert to WAV format
+      const wavBlob = await convertToWav(blob);
 
-    const formData = new FormData();
-    formData.append("file", wavBlob, `sample-${sampleIndex + 1}.wav`);
+      // Create FormData
+      const formData = new FormData();
+      formData.append("file", wavBlob, `sample-${sampleIndex + 1}.wav`);
 
+      // Get token from localStorage
       const token = localStorage.getItem("token");
+      
+      if (!token) {
+        throw new Error("No authentication token found. Please login again.");
+      }
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/voice/enroll`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          
+        },
         body: formData,
       });
 
+      // Parse the response
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.detail || "Enrollment failed for this sample.");
+        throw new Error(data.detail || data.message || "Enrollment failed for this sample.");
       }
 
-      notify.success(`Sample ${sampleIndex + 1} recorded.`);
+      notify.success(`Sample ${sampleIndex + 1} recorded successfully.`);
 
+      // Move to next sample or complete enrollment
       if (sampleIndex < SAMPLE_PHRASES.length - 1) {
         setSampleIndex((prev) => prev + 1);
       } else {
-        notify.success("Voice enrollment complete.");
+        notify.success("Voice enrollment complete!");
         router.push("/SuccessSpch");
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Upload failed.";
+      const message = err instanceof Error ? err.message : "Upload failed. Please try again.";
       notify.error(message);
+      console.error("Upload error:", err);
     } finally {
       setIsUploading(false);
     }
@@ -151,7 +164,9 @@ export default function VoiceBiometrics() {
             onTouchStart={startRecording}
             onTouchEnd={stopRecording}
             disabled={isUploading}
-            className="btn-primary text-md rounded-md disabled:opacity-60"
+            className={`btn-primary text-md rounded-md ${
+              isUploading ? "opacity-60 cursor-not-allowed" : ""
+            }`}
           >
             <T>
               {isUploading
