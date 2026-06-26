@@ -82,7 +82,7 @@ export default function VoiceBiometrics() {
         setSampleIndex((prev) => prev + 1);
       } else {
         notify.success("Voice enrollment complete.");
-        router.push("/SuccessSpch");
+        router.push("/Success-0126647");
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Upload failed.";

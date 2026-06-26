@@ -125,6 +125,18 @@
   animation-delay: 1.05s;
 }
 
+.obj:nth-child(9){
+  animation-delay: 1.15s;
+}
+.obj:nth-child(10){
+  animation-delay: 1.23s;
+}
+.obj:nth-child(11){
+  animation-delay: 1.35s;
+}
+
+
+
 @keyframes loading {
   0% {
     height: 0;
@@ -145,4 +157,8 @@
 
 @keyframes reveal {
   to { clip-path: inset(0 0 0 0); }
+}
+
+.chat-input-link{
+  // border:1px solid colors.$neutral-900;
 }
