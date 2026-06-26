@@ -1,9 +1,10 @@
 "use client";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
-import {ArrowLeft , Mic} from "lucide-react"
+import {ArrowLeft , Mic , ChevronLeft} from "lucide-react"
 import { CirclesThreePlus } from "phosphor-react";
 import T from "@/components/T";
+import Link from "next/link";
 
 export default function VoiceBiometrics(){
 
@@ -15,10 +16,16 @@ export default function VoiceBiometrics(){
 
          <div className="px-5 xl:px-20 mt-10">
 
-       <div className="bg-primary-100 w-30 p-2 flex flex-row items-center gap-2 rounded-md font-jetbrains text-primary-500 text-xs ">
+       <div className="flex items-center gap-1">
+
+       <Link href="../LanguageSelect/"><ChevronLeft size={15} className="text-primary-500 font-bold"></ChevronLeft></Link>
+
+        <div className="bg-primary-100 w-40 p-2 flex flex-row items-center gap-2 rounded-md font-jetbrains text-primary-500 text-xs ">
         <CirclesThreePlus size={15} className="text-primary-500" weight="fill" />
           <T>Step 02</T>
       </div>
+
+       </div>
 
        <div>
         <h1 className="text-2xl font-medium mt-2 font-geist typing"><T>Kindly provide a voice sample.</T></h1>
