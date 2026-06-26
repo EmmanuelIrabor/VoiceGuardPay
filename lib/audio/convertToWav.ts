@@ -4,6 +4,7 @@ export async function convertToWav(blob: Blob): Promise<Blob> {
   const audioContext = new AudioContext();
   const decoded = await audioContext.decodeAudioData(arrayBuffer);
 
+  // Resample to 16kHz mono using an OfflineAudioContext
   const targetSampleRate = 16000;
   const offlineContext = new OfflineAudioContext(
     1, // mono
