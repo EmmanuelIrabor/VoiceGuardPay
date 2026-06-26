@@ -4,10 +4,40 @@ import { CirclesThreePlus , Translate } from "phosphor-react";
 import LanguageCard from "@/components/ui/LanguageCard";
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Footer from "@/components/Footer";
+import { useLanguage } from "@/lib/context/LanguageContext";
+import { notify } from "@/lib/stores/notifyStore";
+
+const LANGUAGE_CODE_MAP: Record<string, string> = {
+  "001 / YO": "yo",
+  "002 / IG": "ig",
+  "003 / HA": "ha",
+  "004 / EN": "en",
+  "005 / CH": "zh-Hans",
+  "006 / DE": "de",
+  "007 / FR": "fr",
+};
 
 export default function LanguageSelect() {
   const [selectedLanguageId, setSelectedLanguageId] = useState<string | null>(null);
+  const { setLanguage } = useLanguage();
+  const router = useRouter();
+
+  const handleSelect = (id: string) => {
+    setSelectedLanguageId(id);
+    setLanguage(LANGUAGE_CODE_MAP[id] ?? "en");
+  };
+
+  const handleConfirm = () => {
+    if (!selectedLanguageId) {
+      notify.error("Please select a language to continue.");
+      return;
+    }
+    notify.success("Language selected.");
+    router.push("/VoiceBiometrics");
+  };
+
   return (
     <>
       <NavBar />
@@ -31,49 +61,49 @@ export default function LanguageSelect() {
         language="Yoruba"
         region="WEST AFRICA / NIGERIA"
         isSelected={selectedLanguageId === "001 / YO"}
-        onSelect={setSelectedLanguageId}
+        onSelect={handleSelect}
       />
       <LanguageCard
         id="002 / IG"
         language="Igbo"
         region="WEST AFRICA / NIGERIA"
         isSelected={selectedLanguageId === "002 / IG"}
-        onSelect={setSelectedLanguageId}
+        onSelect={handleSelect}
       />
       <LanguageCard
         id="003 / HA"
         language="Hausa"
         region="WEST AFRICA / NIGERIA"
         isSelected={selectedLanguageId === "003 / HA"}
-        onSelect={setSelectedLanguageId}
+        onSelect={handleSelect}
       />
       <LanguageCard
         id="004 / EN"
         language="English"
         region="GLOBAL / DEFAULT"
         isSelected={selectedLanguageId === "004 / EN"}
-        onSelect={setSelectedLanguageId}
+        onSelect={handleSelect}
       />
       <LanguageCard
         id="005 / CH"
         language="Chinese"
         region="EAST ASIA / CHINA"
         isSelected={selectedLanguageId === "005 / CH"}
-        onSelect={setSelectedLanguageId}
+        onSelect={handleSelect}
       />
       <LanguageCard
         id="006 / DE"
         language="German"
         region="WESTERN EUROPE / GERMANY"
         isSelected={selectedLanguageId === "006 / DE"}
-        onSelect={setSelectedLanguageId}
+        onSelect={handleSelect}
       />
       <LanguageCard
         id="007 / FR"
         language="French"
         region="WESTERN EUROPE / FRANCE"
         isSelected={selectedLanguageId === "007 / FR"}
-        onSelect={setSelectedLanguageId}
+        onSelect={handleSelect}
       />
     </div>
 
@@ -82,11 +112,13 @@ export default function LanguageSelect() {
  <div className="mt-5 flex items-center justify-between">
   <div className="flex items-center gap-3">
     <span className="loader-s"></span>
-  <p className="font-jetbrains text-xs text-neutral-900">AWAITING SELECTION...</p>
+  <p className="font-jetbrains text-xs text-neutral-900">
+    {selectedLanguageId ? "LANGUAGE SELECTED" : "AWAITING SELECTION..."}
+  </p>
   </div>
 
   <div>
-    <button className="btn-dark text-xs">CONFIRM SELECTION</button>
+    <button onClick={handleConfirm} className="btn-dark text-xs">CONFIRM SELECTION</button>
   </div>
  </div>
  <p className="font-jetbrains text-xs text-primary-700 mt-2">Don't see your language? Kindly reach out to our support team.</p>
