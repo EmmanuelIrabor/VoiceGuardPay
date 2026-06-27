@@ -1,7 +1,7 @@
 "use client";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
-import { Wallet , Mic , MessageSquare , Radar } from "lucide-react";
+import { Wallet , Mic , MessageSquare , Radar, MoveUpRight } from "lucide-react";
 import Link from "next/link";
 
 export default function Home (){
@@ -79,20 +79,20 @@ export default function Home (){
 
             <div className="xl:px-30 mt-10 chat absolute bottom-6 left-0 right-0 px-6 ">
 
-                <p className="font-bold text-xs">Text Command</p>
-                <p className="text-neutral-600 text-xs mt-2 font-jetbrains">intelligent agent ready</p>
+                <p className="font-bold text-xs font-gaust">Text Command</p>
+                <p className="text-neutral-600 text-xs mt-2">intelligent agent ready</p>
 
                 <div className="flex flex-col md:flex-row">
         <div className="flex-1">
     <Link href="/ChatTransaction">
-      <div className="flex items-center bg-primary-100 gap-2 px-2 py-3 chat-input-link rounded-md mt-5">
+      <div className="flex items-center bg-white gap-2 px-2 py-3 chat-input-link rounded-lg mt-5">
         <MessageSquare
           size={20}
-          className="text-neutral-800 font-extralight"
+          className="text-primary-500 font-extralight"
         />
 
         <input
-          className="pointer-events-none outline-none border-none text-xs"
+          className="pointer-events-none outline-none border-none text-xs l-input"
           type="text"
           placeholder="Type a Command"
         />
@@ -101,16 +101,16 @@ export default function Home (){
   </div>
 
   <div className="flex flex-wrap items-center gap-2 mt-4 md:mt-5 md:ml-4">
-    <div className="bg-primary-500 p-2 text-xs rounded-md text-white cursor-pointer">
+    <div className="bg-primary-400 p-2 text-xs rounded-md text-white cursor-pointer">
       Balance Check
     </div>
 
-    <div className="bg-primary-200 p-2 text-xs rounded-md text-neutral-900 cursor-pointer">
+    <div className="bg-primary-400 p-2 text-xs rounded-md text-white cursor-pointer">
       History
     </div>
 
-    <div className="bg-primary-200 p-2 text-xs rounded-md text-neutral-900 cursor-pointer">
-      Transfer
+    <div className="bg-primary-400 p-2 text-xs rounded-md text-white cursor-pointer flex items-center">
+      Transfer <MoveUpRight size={10}/>
     </div>
   </div>
 </div>
