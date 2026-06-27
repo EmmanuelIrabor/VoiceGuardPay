@@ -84,7 +84,7 @@ export default function Home (){
 
                 <div className="flex flex-col md:flex-row">
         <div className="flex-1">
-    <Link href="/ChatTransaction">
+    <Link href="/Chat">
       <div className="flex items-center bg-white gap-2 px-2 py-3 chat-input-link rounded-lg mt-5">
         <MessageSquare
           size={20}
