@@ -70,7 +70,7 @@ export default function Home (){
 
 
            <div className="flex justify-end mb-4 mt-20 md:mt-30 lg:mt-0 xl:mt-0 ">
-  <Link href={'/'} className="w-14 h-14 rounded-full bg-primary-500 text-white shadow-xl hover:scale-105 transition flex items-center justify-center">
+  <Link href={'/Proxima'} className="w-14 h-14 rounded-full bg-primary-500 text-white shadow-xl hover:scale-105 transition flex items-center justify-center">
     <Radar size={24} />
   </Link>
 </div>
