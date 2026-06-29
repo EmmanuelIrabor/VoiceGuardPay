@@ -1,6 +1,5 @@
 "use client";
 
-
 import { useEffect, useState, useRef, useCallback } from "react";
 import NavBar from "@/components/NavBar";
 import { ChevronLeft } from "lucide-react";
@@ -20,20 +19,12 @@ import {
 } from "@/lib/api/proximity";
 import { notify } from "@/lib/stores/notifyStore";
 
-// ─── Error messages ────────────────────────────────────────────────────────
-
 const GEO_MESSAGES: Record<GeoErrorCode, string> = {
-  PERMISSION_DENIED:
-    "Location access was denied. Enable it in your browser settings.",
-  POSITION_UNAVAILABLE:
-    "Your location couldn't be determined. Check your signal.",
-  TIMEOUT:
-    "Getting your location is taking too long. Try moving to an open area.",
-  UNSUPPORTED:
-    "Geolocation isn't supported on this device.",
+  PERMISSION_DENIED:    "Location access was denied. Enable it in your browser settings.",
+  POSITION_UNAVAILABLE: "Your location couldn't be determined. Check your signal.",
+  TIMEOUT:              "Getting your location is taking too long. Try moving to an open area.",
+  UNSUPPORTED:          "Geolocation isn't supported on this device.",
 };
-
-// ─── Component ─────────────────────────────────────────────────────────────
 
 export default function Proxima() {
   const [nearbyUsers, setNearbyUsers] = useState<NearbyUser[]>([]);
@@ -44,8 +35,19 @@ export default function Proxima() {
   const watchIdRef      = useRef<number | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ── Teardown ─────────────────────────────────────────────────────────────
+  // ── Fetch once, right now ─────────────────────────────────────────────────
+  // Called on mount AND whenever the page becomes visible again (back-navigation).
+  // This means the list is never empty for 5 s waiting for the first interval tick.
+  const pollNow = useCallback(async () => {
+    try {
+      const users = await fetchNearbyUsers();
+      setNearbyUsers(users);
+    } catch {
+      // silent — interval will retry
+    }
+  }, []);
 
+  // ── Teardown ──────────────────────────────────────────────────────────────
   const stopAll = useCallback(() => {
     stopLocationTracking(watchIdRef.current);
     watchIdRef.current = null;
@@ -55,9 +57,7 @@ export default function Proxima() {
   }, []);
 
   // ── Start scanning ────────────────────────────────────────────────────────
-
   const startScanning = useCallback(() => {
-    // Guard: token must exist before we start or every push will 401
     if (!localStorage.getItem("token")) {
       setPushError("You're not signed in. Please log in and try again.");
       return;
@@ -68,7 +68,6 @@ export default function Proxima() {
       return;
     }
 
-    // Reset any previous error state
     setGeoError(null);
     setPushError(null);
     setIsScanning(true);
@@ -77,16 +76,15 @@ export default function Proxima() {
       async (lat, lng) => {
         try {
           await pushLocation(lat, lng);
-          setPushError(null); // clear previous push error on success
+          setPushError(null);
         } catch (err) {
           const msg = err instanceof Error ? err.message : "Location push failed";
           setPushError(msg);
-          // Don't stop scanning — GPS is working, just a transient network issue
         }
       },
       {
         pushThrottleMs: 6_000,
-        highAccuracy: false,   // flip to true if you need <10 m precision
+        highAccuracy: false,
         onError: (code: GeoErrorCode) => {
           const msg = GEO_MESSAGES[code];
           setGeoError(msg);
@@ -104,34 +102,50 @@ export default function Proxima() {
 
     watchIdRef.current = watchId;
 
-    // Poll for nearby users every 5 s.
-    // Intentionally offset from the 6 s push so we read a freshly-written row.
-    pollIntervalRef.current = setInterval(async () => {
-      try {
-        const users = await fetchNearbyUsers();
-        setNearbyUsers(users);
-      } catch {
-        // Silent — don't toast on every failed poll
-      }
-    }, 5_000);
-  }, [stopAll]);
+    // Fetch immediately so the list is populated before the first interval tick
+    pollNow();
+
+    // Then keep polling every 5 s
+    pollIntervalRef.current = setInterval(pollNow, 5_000);
+  }, [stopAll, pollNow]);
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
-
   useEffect(() => {
     startScanning();
     return stopAll;
   }, [startScanning, stopAll]);
 
-  // ─── Render ──────────────────────────────────────────────────────────────
+  // ── Page Visibility API ───────────────────────────────────────────────────
+  // Fires when the user navigates back to this tab/page without a full remount.
+  // Re-fetches immediately so the list isn't stale after returning from /Pay.
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        pollNow();
+      }
+    };
 
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [pollNow]);
+
+  // ── Next.js route focus recovery ──────────────────────────────────────────
+  // When Next.js soft-navigates back to this page, the component may not fully
+  // remount (depending on your router cache config). window focus is a reliable
+  // signal that the user has returned to this page.
+  useEffect(() => {
+    const handleFocus = () => pollNow();
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [pollNow]);
+
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <>
       <NavBar />
 
       <div className="px-5 xl:px-20">
 
-        {/* Header row */}
         <div className="flex items-center gap-1 mt-5">
           <Link href="../Home/">
             <ChevronLeft size={15} className="text-primary-500 font-bold" />
@@ -142,7 +156,6 @@ export default function Proxima() {
           </div>
         </div>
 
-        {/* Title */}
         <div className="mt-2">
           <h1 className="text-2xl font-medium font-geist typing">
             {isScanning ? "Proxima is scanning" : "Proxima"}
@@ -152,34 +165,27 @@ export default function Proxima() {
           </p>
         </div>
 
-        {/* Geolocation error */}
         {geoError && (
           <div className="mt-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-xs text-red-700">
             <p>{geoError}</p>
-            <button
-              className="mt-2 font-semibold underline"
-              onClick={startScanning}
-            >
+            <button className="mt-2 font-semibold underline" onClick={startScanning}>
               Retry
             </button>
           </div>
         )}
 
-        {/* Push / auth error (non-fatal — scanning continues) */}
         {pushError && !geoError && (
           <div className="mt-4 rounded-md bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-700">
             {pushError}
           </div>
         )}
 
-        {/* Scanner animation */}
         <div className="mt-10 flex items-center justify-center">
           <div className="rounded-md p-5 w-30 h-20 flex justify-center items-center">
             <div className={`blob-scanner${isScanning ? "" : " blob-scanner--paused"}`} />
           </div>
         </div>
 
-        {/* Status line */}
         <p className="text-center font-bold font-jetbrains mt-15 text-xs">
           Proximity detection
         </p>
@@ -191,11 +197,8 @@ export default function Proxima() {
               : "Scanning paused"}
         </p>
 
-        {/* Results */}
         <div className="mt-15 mb-5">
-          <p className="font-bold font-jetbrains text-neutral-700 text-xs">
-            DISCOVERED
-          </p>
+          <p className="font-bold font-jetbrains text-neutral-700 text-xs">DISCOVERED</p>
 
           <div className="flex flex-col gap-2 mt-2">
             {nearbyUsers.length === 0 ? (
