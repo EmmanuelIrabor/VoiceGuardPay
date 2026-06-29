@@ -38,7 +38,7 @@ export default function Proxima() {
         const users = await fetchNearbyUsers();
         setNearbyUsers(users);
       } catch (err) {
-        
+        // fail silently on individual polls — don't spam toasts every 3s
       }
     }, 3000);
 
@@ -89,8 +89,8 @@ export default function Proxima() {
 
           <div className="flex flex-col gap-2 mt-2 mb-5">
             {nearbyUsers.length === 0 ? (
-              <p className="text-xs text-primary-500  mt-5">
-                No one nearby yet — keep this open on both devices.
+              <p className="text-xs text-primary-500 text-center mt-5">
+                No one nearby yet.
               </p>
             ) : (
               nearbyUsers.map((user) => (
