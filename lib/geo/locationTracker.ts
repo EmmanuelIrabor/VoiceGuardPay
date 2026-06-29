@@ -7,19 +7,14 @@ export type GeoErrorCode =
   | "UNSUPPORTED";
 
 export interface TrackingOptions {
-  /**
-   * Minimum milliseconds between onUpdate calls regardless of how often
-   * watchPosition fires. Default: 6000 (one push per 6 s max).
-   */
   pushThrottleMs?: number;
-  /**
-   * enableHighAccuracy flag. false = lower battery, faster first fix on mobile.
-   * Flip to true only if you need sub-10 m accuracy.
-   * Default: false.
-   */
   highAccuracy?: boolean;
-  /** Called with a typed error code when geolocation fails. */
   onError?: (code: GeoErrorCode, rawMessage: string) => void;
+}
+
+export interface LatLng {
+  lat: number;
+  lng: number;
 }
 
 function toGeoErrorCode(err: GeolocationPositionError): GeoErrorCode {
@@ -31,11 +26,18 @@ function toGeoErrorCode(err: GeolocationPositionError): GeoErrorCode {
   }
 }
 
+// Module-level cache — survives between poll ticks even when watchPosition stalls.
+// Reset to null when tracking stops.
+let lastKnownPosition: LatLng | null = null;
+
+/** Returns the most recent GPS fix, or null if we've never had one. */
+export function getLastKnownPosition(): LatLng | null {
+  return lastKnownPosition;
+}
+
 /**
  * Start watching device position.
- *
- * Returns a watchId to pass to stopLocationTracking(), or null if the
- * Geolocation API isn't available (SSR, old browser, secure-context missing).
+ * Returns a watchId to pass to stopLocationTracking(), or null if unavailable.
  */
 export function startLocationTracking(
   onUpdate: (lat: number, lng: number) => void,
@@ -48,6 +50,9 @@ export function startLocationTracking(
 
   const watchId = navigator.geolocation.watchPosition(
     ({ coords }) => {
+      // Always cache the latest fix regardless of throttle
+      lastKnownPosition = { lat: coords.latitude, lng: coords.longitude };
+
       const now = Date.now();
       if (now - lastPushedAt >= pushThrottleMs) {
         lastPushedAt = now;
@@ -59,10 +64,7 @@ export function startLocationTracking(
     },
     {
       enableHighAccuracy: highAccuracy,
-      // Reuse a fix up to 10 s old — avoids hammering the GPS chip on every tick.
       maximumAge: 10_000,
-      // 15 s gives iOS Safari enough time for a cold-start fix.
-      // The original 10 s caused silent timeouts on mobile.
       timeout: 15_000,
     },
   );
@@ -72,4 +74,5 @@ export function startLocationTracking(
 
 export function stopLocationTracking(watchId: number | null): void {
   if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+  lastKnownPosition = null;
 }

@@ -1,5 +1,6 @@
 "use client";
 
+
 import { useEffect, useState, useRef, useCallback } from "react";
 import NavBar from "@/components/NavBar";
 import { ChevronLeft } from "lucide-react";
@@ -10,6 +11,7 @@ import FoundDevice from "@/components/FoundDevices";
 import {
   startLocationTracking,
   stopLocationTracking,
+  getLastKnownPosition,
   GeoErrorCode,
 } from "@/lib/geo/locationTracker";
 import {
@@ -34,18 +36,62 @@ export default function Proxima() {
 
   const watchIdRef      = useRef<number | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const wakeLockRef     = useRef<WakeLockSentinel | null>(null);
 
-  // ── Fetch once, right now ─────────────────────────────────────────────────
-  // Called on mount AND whenever the page becomes visible again (back-navigation).
-  // This means the list is never empty for 5 s waiting for the first interval tick.
+  // ── Wake Lock ─────────────────────────────────────────────────────────────
+  // Prevents the OS from suspending the tab/GPS on mobile.
+  // Re-acquired on visibility change because wake locks are released automatically
+  // when the tab goes to the background.
+  const acquireWakeLock = useCallback(async () => {
+    if (!("wakeLock" in navigator)) return;
+    try {
+      wakeLockRef.current = await (navigator as any).wakeLock.request("screen");
+    } catch {
+      // Non-fatal — wake lock is a best-effort enhancement
+    }
+  }, []);
+
+  const releaseWakeLock = useCallback(async () => {
+    try {
+      await wakeLockRef.current?.release();
+      wakeLockRef.current = null;
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // ── Push last known position ──────────────────────────────────────────────
+  // Used by the poll tick and visibility handler to keep the server ping fresh
+  // even when watchPosition hasn't fired recently (GPS stall, backgrounded tab).
+  const pushLastKnown = useCallback(async () => {
+    const pos = getLastKnownPosition();
+    if (!pos) return;
+    try {
+      await pushLocation(pos.lat, pos.lng);
+      setPushError(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Location push failed";
+      setPushError(msg);
+    }
+  }, []);
+
+  // ── Poll ──────────────────────────────────────────────────────────────────
   const pollNow = useCallback(async () => {
+    // Don't fire stale queued polls when the tab comes back from background
+    if (document.visibilityState !== "visible") return;
+
+    // Push last known position on every poll tick to keep the server ping fresh.
+    // This is the key mobile fix: even if watchPosition stalls, the ping won't
+    // go stale as long as we have a cached position.
+    await pushLastKnown();
+
     try {
       const users = await fetchNearbyUsers();
       setNearbyUsers(users);
     } catch {
-      // silent — interval will retry
+      // silent
     }
-  }, []);
+  }, [pushLastKnown]);
 
   // ── Teardown ──────────────────────────────────────────────────────────────
   const stopAll = useCallback(() => {
@@ -53,8 +99,9 @@ export default function Proxima() {
     watchIdRef.current = null;
     if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     pollIntervalRef.current = null;
+    releaseWakeLock();
     setIsScanning(false);
-  }, []);
+  }, [releaseWakeLock]);
 
   // ── Start scanning ────────────────────────────────────────────────────────
   const startScanning = useCallback(() => {
@@ -71,6 +118,8 @@ export default function Proxima() {
     setGeoError(null);
     setPushError(null);
     setIsScanning(true);
+
+    acquireWakeLock();
 
     const watchId = startLocationTracking(
       async (lat, lng) => {
@@ -102,42 +151,39 @@ export default function Proxima() {
 
     watchIdRef.current = watchId;
 
-    // Fetch immediately so the list is populated before the first interval tick
+    // Immediate first poll — don't wait 5 s for the interval
     pollNow();
-
-    // Then keep polling every 5 s
     pollIntervalRef.current = setInterval(pollNow, 5_000);
-  }, [stopAll, pollNow]);
+  }, [stopAll, pollNow, acquireWakeLock]);
 
-  // ── Lifecycle ─────────────────────────────────────────────────────────────
+  // ── Mount / unmount ───────────────────────────────────────────────────────
   useEffect(() => {
     startScanning();
     return stopAll;
   }, [startScanning, stopAll]);
 
-  // ── Page Visibility API ───────────────────────────────────────────────────
-  // Fires when the user navigates back to this tab/page without a full remount.
-  // Re-fetches immediately so the list isn't stale after returning from /Pay.
+  // ── Visibility & focus recovery ───────────────────────────────────────────
   useEffect(() => {
-    const handleVisibilityChange = () => {
+    const onVisible = async () => {
       if (document.visibilityState === "visible") {
+        // Re-acquire wake lock (OS releases it when tab goes background)
+        await acquireWakeLock();
+        // Push immediately so the ping doesn't sit stale while we were away,
+        // then fetch so the list repopulates without waiting for the interval
+        await pushLastKnown();
         pollNow();
       }
     };
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [pollNow]);
+    const onFocus = () => pollNow();
 
-  // ── Next.js route focus recovery ──────────────────────────────────────────
-  // When Next.js soft-navigates back to this page, the component may not fully
-  // remount (depending on your router cache config). window focus is a reliable
-  // signal that the user has returned to this page.
-  useEffect(() => {
-    const handleFocus = () => pollNow();
-    window.addEventListener("focus", handleFocus);
-    return () => window.removeEventListener("focus", handleFocus);
-  }, [pollNow]);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [pollNow, pushLastKnown, acquireWakeLock]);
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
