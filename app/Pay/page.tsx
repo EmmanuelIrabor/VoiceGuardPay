@@ -1,8 +1,9 @@
 "use client";
 import NavBar from "@/components/NavBar";
-import { LockKeyhole } from "lucide-react";
+import { LockKeyhole , ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
+import { CirclesThreePlus } from "phosphor-react";
 
 export default function Pay() {
   const [pin, setPin] = useState(["", "", "", ""]);
@@ -65,21 +66,29 @@ export default function Pay() {
       <NavBar />
 
       <div className="px-5 xl:px-20">
+        
+        <div className="flex items-center gap-1 mt-5">
+                  <Link href="../Proxima/">
+                    <ChevronLeft size={15} className="text-primary-500 font-bold" />
+                  </Link>
+        
+                  <div className="bg-primary-100 w-50 p-2 flex flex-row items-center gap-2 rounded-md font-jetbrains text-primary-500 text-xs ">
+                    <CirclesThreePlus size={15} className="text-primary-500" weight="fill" />
+                    Confirm Transaction
+                  </div>
+                </div>
         <div className="mt-5 flex items-center justify-center">
-          <div className="paymodal rounded-md bg-white px-2 py-3">
-            <p className="text-xs font-bold">Confirm Transaction</p>
-            <p className="font-jetbrains text-xs text-neutral-700">
-              status : pending
-            </p>
+          <div className="paymodal rounded-md bg-white px-2 py-1">
+            {/* <p className="text-xs font-bold">Confirm Transaction</p>
 
-            <hr className="mt-5" />
+            <hr className="mt-3 text-primary-100" /> */}
 
             <div className="flex items-start justify-between gap-10 mt-5">
               <div>
                 <p className="font-jetbrains text-xs">RECEPIENT</p>
                 <p className="font-bold text-xs">Sarah Adamu</p>
                 <p className="text-neutral-700 text-xs">
-                  Acc:005677895.Zenith Bank
+                  Acc:005677895.Proxima Bank
                 </p>
               </div>
 
@@ -143,7 +152,7 @@ export default function Pay() {
            
            
 
-            <div className="flex flex-col gap-2 mt-5">
+            <div className="flex flex-col gap-2 mt-5 mb-5">
               <button
                 onClick={handleConfirm}
                 className="btn-dark text-xs flex items-center justify-center gap-1 font-bold"
