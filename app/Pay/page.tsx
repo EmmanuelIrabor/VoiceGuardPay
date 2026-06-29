@@ -78,7 +78,7 @@ export default function Pay() {
                   </div>
                 </div>
         <div className="mt-5 flex items-center justify-center">
-          <div className="paymodal rounded-md bg-white px-2 py-1">
+          <div className="paymodal rounded-md bg-white px-5 py-1">
             {/* <p className="text-xs font-bold">Confirm Transaction</p>
 
             <hr className="mt-3 text-primary-100" /> */}
@@ -103,7 +103,7 @@ export default function Pay() {
                 <p className="font-jetbrains text-xs text-neutral-800">
                   DATE/TIME
                 </p>
-                <p className="text-xs text-neutral-800">Oct 24 2026 |</p>
+                <p className="text-xs text-neutral-800">Oct 24 2026 </p>
                 <p className="text-xs text-neutral-800">14:29 Pm</p>
               </div>
               <div>

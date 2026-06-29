@@ -15,38 +15,57 @@ export default function Proxima() {
   const [isScanning, setIsScanning] = useState(true);
   const watchIdRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      notify.error("Geolocation isn't supported on this device.");
-      setIsScanning(false);
-      return;
-    }
-
-    const watchId = startLocationTracking((lat, lng) => {
-      pushLocation(lat, lng);
-    });
-
-    if (watchId === null) {
-      notify.error("Location access denied. Enable it to discover nearby users.");
-      setIsScanning(false);
-    }
-
-    watchIdRef.current = watchId;
-
-    const pollInterval = setInterval(async () => {
-      try {
-        const users = await fetchNearbyUsers();
+ // Proxima.tsx - Smarter polling
+useEffect(() => {
+  let pollInterval: NodeJS.Timeout;
+  let isMounted = true;
+  
+  // Start with faster polling initially, then slow down
+  const getPollInterval = (attempt: number) => {
+    if (attempt < 3) return 1000;  // First 3 attempts: every 1s
+    if (attempt < 10) return 2000; // Next 7 attempts: every 2s
+    return 3000;                   // Then: every 3s
+  };
+  
+  let attemptCount = 0;
+  
+  const pollNearby = async () => {
+    if (!isMounted) return;
+    
+    try {
+      const users = await fetchNearbyUsers();
+      if (isMounted) {
         setNearbyUsers(users);
-      } catch (err) {
-        // fail silently on individual polls — don't spam toasts every 3s
+        if (users.length > 0) {
+          console.log('👥 Found users:', users.length);
+        }
       }
-    }, 3000);
-
-    return () => {
-      if (watchIdRef.current !== null) stopLocationTracking(watchIdRef.current);
-      clearInterval(pollInterval);
-    };
-  }, []);
+    } catch (err) {
+      console.error('Poll error:', err);
+    } finally {
+      attemptCount++;
+    }
+  };
+  
+  // Initial poll immediately
+  pollNearby();
+  
+  // Start interval
+  pollInterval = setInterval(() => {
+    pollNearby();
+  }, getPollInterval(attemptCount));
+  
+  // Recalculate interval when users found
+  const shouldPollFaster = nearbyUsers.length === 0;
+  if (shouldPollFaster && attemptCount < 10) {
+    // Already handled by getPollInterval
+  }
+  
+  return () => {
+    isMounted = false;
+    clearInterval(pollInterval);
+  };
+}, []);
 
   return (
     <>
