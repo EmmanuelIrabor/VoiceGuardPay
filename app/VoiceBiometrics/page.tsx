@@ -3,7 +3,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
-import { ArrowLeft, Mic, ChevronLeft } from "lucide-react";
+import { Mic, ChevronLeft ,ChevronsRight } from "lucide-react";
 import { CirclesThreePlus } from "phosphor-react";
 import T from "@/components/T";
 import Link from "next/link";
@@ -161,7 +161,16 @@ export default function VoiceBiometrics() {
                 : "Hold to record sample"}
             </T>
           </button>
+
+
         </div>
+
+        <Link  href={'/Home'} className="flex items-center gap-1 text-primary-500 text-xs mt-10">
+
+        <p >Next</p>
+        <ChevronsRight size={10}/>
+          
+        </Link>
       </div>
       <Footer />
     </>
