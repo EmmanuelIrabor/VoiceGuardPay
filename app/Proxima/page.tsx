@@ -55,7 +55,7 @@ export default function Proxima (){
                         <ChevronLeft size={15} className="text-primary-500 font-bold" />
                       </Link>
             
-                      <div className="bg-primary-100 w-40 p-2 flex flex-row items-center gap-2 rounded-md font-jetbrains text-primary-500 text-xs ">
+                      <div className="bg-primary-100 w-25 p-2 flex flex-row items-center gap-2 rounded-md font-jetbrains text-primary-500 text-xs ">
                         <CirclesThreePlus size={15} className="text-primary-500" weight="fill" />
                         Proxima
                       </div>

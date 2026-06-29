@@ -4,7 +4,28 @@ import Footer from "@/components/Footer";
 import { Wallet , Mic , MessageSquare , Radar, MoveUpRight } from "lucide-react";
 import Link from "next/link";
 
+import { useState, useEffect } from "react";
+
+const examplePhrases = [
+  '"Pay 10,000 NGN to Sarah"',
+  '"Pay my electricity bills"',
+  '"Order take out"',
+  '"Send 5,000 NGN to Mum"',
+  '"Top up my data bundle"',
+  '"Split the bill with Chidi"',
+];
+
 export default function Home (){
+
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % examplePhrases.length);
+    }, 1500); 
+    return () => clearInterval(interval);
+  }, []);
+
 
     return (
 
@@ -65,7 +86,9 @@ export default function Home (){
             <div>
                  <p className="text-center font-jetbrains text-neutral-800 text-xs">Listening ..</p>
 
-                 <p className="text-center mt-1">"Pay 10,000 NGN to Sarah"</p>
+                  <p className="text-center mt-1 transition-opacity duration-300">
+                 {examplePhrases[index]}
+                  </p>
             </div>
 
 
