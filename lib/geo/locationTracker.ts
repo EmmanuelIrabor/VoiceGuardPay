@@ -1,4 +1,21 @@
-
+/**
+ * locationTracker.ts
+ *
+ * Two-phase location strategy:
+ *
+ * Phase 1 — getCurrentPosition (one-shot, fires immediately)
+ *   Gets a fix and pushes it right away so the user has a DB row
+ *   within seconds of opening the page, even on mobile cold-start.
+ *   watchPosition alone can silently delay its first callback for 20-40s
+ *   on iOS/Android, leaving no ping in the DB during that window.
+ *
+ * Phase 2 — watchPosition (continuous)
+ *   Takes over after the one-shot to keep the position current.
+ *   Throttled to one push per pushThrottleMs to avoid hammering the server.
+ *
+ * Last known position is cached at module level so the poll tick in
+ * page.tsx can re-push it to keep the ping fresh even if GPS stalls.
+ */
 
 export type GeoErrorCode =
   | "PERMISSION_DENIED"
@@ -27,17 +44,17 @@ function toGeoErrorCode(err: GeolocationPositionError): GeoErrorCode {
 }
 
 // Module-level cache — survives between poll ticks even when watchPosition stalls.
-// Reset to null when tracking stops.
 let lastKnownPosition: LatLng | null = null;
 
-/** Returns the most recent GPS fix, or null if we've never had one. */
 export function getLastKnownPosition(): LatLng | null {
   return lastKnownPosition;
 }
 
 /**
- * Start watching device position.
- * Returns a watchId to pass to stopLocationTracking(), or null if unavailable.
+ * Start tracking. Returns watchId (pass to stopLocationTracking) or null.
+ *
+ * Immediately fires getCurrentPosition so the first push happens within
+ * 1-2 seconds on mobile instead of waiting for watchPosition's first callback.
  */
 export function startLocationTracking(
   onUpdate: (lat: number, lng: number) => void,
@@ -48,20 +65,39 @@ export function startLocationTracking(
   const { pushThrottleMs = 6_000, highAccuracy = false, onError } = options;
   let lastPushedAt = 0;
 
-  const watchId = navigator.geolocation.watchPosition(
-    ({ coords }) => {
-      // Always cache the latest fix regardless of throttle
-      lastKnownPosition = { lat: coords.latitude, lng: coords.longitude };
+  const handlePosition = (position: GeolocationPosition, forcePush = false) => {
+    const { latitude, longitude } = position.coords;
+    lastKnownPosition = { lat: latitude, lng: longitude };
 
-      const now = Date.now();
-      if (now - lastPushedAt >= pushThrottleMs) {
-        lastPushedAt = now;
-        onUpdate(coords.latitude, coords.longitude);
+    const now = Date.now();
+    if (forcePush || now - lastPushedAt >= pushThrottleMs) {
+      lastPushedAt = now;
+      onUpdate(latitude, longitude);
+    }
+  };
+
+  // ── Phase 1: one-shot immediate fix ──────────────────────────────────────
+  // forcePush=true bypasses the throttle so this always pushes immediately.
+  navigator.geolocation.getCurrentPosition(
+    (pos) => handlePosition(pos, true),
+    (err) => {
+      // Non-fatal — watchPosition below will retry continuously.
+      // Only surface PERMISSION_DENIED since that's unrecoverable.
+      if (err.code === err.PERMISSION_DENIED) {
+        onError?.(toGeoErrorCode(err), err.message);
       }
     },
-    (err) => {
-      onError?.(toGeoErrorCode(err), err.message);
+    {
+      enableHighAccuracy: highAccuracy,
+      maximumAge: 30_000,  // accept a fix up to 30 s old for the one-shot
+      timeout: 10_000,
     },
+  );
+
+  // ── Phase 2: continuous watch ─────────────────────────────────────────────
+  const watchId = navigator.geolocation.watchPosition(
+    (pos) => handlePosition(pos),
+    (err) => onError?.(toGeoErrorCode(err), err.message),
     {
       enableHighAccuracy: highAccuracy,
       maximumAge: 10_000,
