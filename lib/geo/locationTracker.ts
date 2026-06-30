@@ -1,21 +1,4 @@
-/**
- * locationTracker.ts
- *
- * Two-phase location strategy:
- *
- * Phase 1 — getCurrentPosition (one-shot, fires immediately)
- *   Gets a fix and pushes it right away so the user has a DB row
- *   within seconds of opening the page, even on mobile cold-start.
- *   watchPosition alone can silently delay its first callback for 20-40s
- *   on iOS/Android, leaving no ping in the DB during that window.
- *
- * Phase 2 — watchPosition (continuous)
- *   Takes over after the one-shot to keep the position current.
- *   Throttled to one push per pushThrottleMs to avoid hammering the server.
- *
- * Last known position is cached at module level so the poll tick in
- * page.tsx can re-push it to keep the ping fresh even if GPS stalls.
- */
+
 
 export type GeoErrorCode =
   | "PERMISSION_DENIED"
@@ -50,12 +33,7 @@ export function getLastKnownPosition(): LatLng | null {
   return lastKnownPosition;
 }
 
-/**
- * Start tracking. Returns watchId (pass to stopLocationTracking) or null.
- *
- * Immediately fires getCurrentPosition so the first push happens within
- * 1-2 seconds on mobile instead of waiting for watchPosition's first callback.
- */
+
 export function startLocationTracking(
   onUpdate: (lat: number, lng: number) => void,
   options: TrackingOptions = {},

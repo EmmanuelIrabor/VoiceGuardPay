@@ -35,7 +35,7 @@ export default function Home (){
 
         <div className="px-5 xl:px-20">
 
-            <div className="balance-card--wrapper xl:px-30">
+            <div className="balance-card--wrapper xl:px-40">
                 <div className="balance-card bg-primary-500 mt-5 px-5 py-10 rounded-md cursor-pointer ">
 
                 <div className="flex flex-row items-center justify-between">
@@ -61,9 +61,9 @@ export default function Home (){
 
             <div className="mt-10 flex items-center justify-center">
 
-                <div className="flex items-center justify-center p-10 rounded-md">
+                {/* <div className="flex items-center justify-center p-10 rounded-md">
 
-                     <div className="loading-wave">
+          <div className="loading-wave">
             <div className="obj"></div>
             <div className="obj"></div>
             <div className="obj"></div>
@@ -79,7 +79,20 @@ export default function Home (){
           </div>
 
          
-                </div>
+                </div> */}
+                 <div className="flex flex-row gap-x-2 items-center justify-center">
+          <div className="wave rounded-full w-2 h-8 bg-primary-500" style={{ "--i": ".1s" } as React.CSSProperties}></div>
+         <div className="wave rounded-full w-2 h-16 bg-primary-200" style={{ "--i": ".2s" } as React.CSSProperties}></div>
+        <div className="wave rounded-full w-2 h-8 bg-primary-100" style={{ "--i": ".4s" } as React.CSSProperties}></div>
+        <div className="wave rounded-full w-2 h-12 bg-primary-600" style={{ "--i": ".7s" } as React.CSSProperties}></div>
+        <div className="wave rounded-full w-2 h-24 bg-primary-500" style={{ "--i": ".6s" } as React.CSSProperties}></div>
+        <div className="wave rounded-full w-2 h-36 bg-primary-500" style={{ "--i": ".5s" } as React.CSSProperties}></div>
+        <div className="wave rounded-full w-2 h-24 bg-primary-500" style={{ "--i": ".6s" } as React.CSSProperties}></div>
+        <div className="wave rounded-full w-2 h-12 bg-neutral-200" style={{ "--i": ".7s" } as React.CSSProperties}></div>
+        <div className="wave rounded-full w-2 h-8 bg-primary-100" style={{ "--i": ".4s" } as React.CSSProperties}></div>
+         <div className="wave rounded-full w-2 h-16 bg-primary-300" style={{ "--i": ".2s" } as React.CSSProperties}></div>
+         <div className="wave rounded-full w-2 h-8 bg-primary-500" style={{ "--i": ".1s" } as React.CSSProperties}></div>
+    </div>
 
             </div>
 
@@ -91,16 +104,26 @@ export default function Home (){
                   </p>
             </div>
 
+<div className="flex flex-row items-center justify-between absolute bottom-6 left-0 right-0 px-6 xl:px-50  mb-4">
 
-           <div className="flex justify-end mb-4 mt-20 md:mt-30 lg:mt-0 xl:mt-0 ">
-  <Link href={'/Proxima'} className="w-14 h-14 rounded-full bg-primary-500 text-white shadow-xl hover:scale-105 transition flex items-center justify-center">
-    <Radar size={24} />
+  <div className="flex justify-start  ">
+  <Link href={'/Chat'} className="w-14 h-14 rounded-full bg-white text-black shadow-xl hover:scale-105 transition flex items-center justify-center">
+    <MessageSquare size={24} />
   </Link>
 </div>
 
 
+           <div className="flex justify-end  ">
+  <Link href={'/Proxima'} className="w-14 h-14 rounded-full bg-white text-black shadow-xl hover:scale-105 transition flex items-center justify-center">
+    <Radar size={24} />
+  </Link>
+</div>
 
-            <div className="xl:px-30 mt-10 chat absolute bottom-6 left-0 right-0 px-6 ">
+</div>
+
+
+
+            {/* <div className="xl:px-30 mt-10 chat absolute bottom-6 left-0 right-0 px-6 ">
 
                 <p className="font-bold text-xs font-gaust">Text Command</p>
                 <p className="text-neutral-600 text-xs mt-2">intelligent agent ready</p>
@@ -140,7 +163,7 @@ export default function Home (){
 
 
 
-            </div>
+            </div> */}
 
         </div>
         
