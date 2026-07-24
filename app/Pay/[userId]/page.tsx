@@ -1,15 +1,20 @@
 "use client";
 import NavBar from "@/components/NavBar";
-import { LockKeyhole , ChevronLeft } from "lucide-react";
+import { LockKeyhole, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import { CirclesThreePlus } from "phosphor-react";
 
 export default function Pay() {
+  const { user_id } = useParams<{ user_id: string }>();
+  const searchParams = useSearchParams();
+  const recipientName = searchParams.get("name") ?? "Unknown";
+
   const [pin, setPin] = useState(["", "", "", ""]);
+  const [amount, setAmount] = useState("");
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
- 
   useEffect(() => {
     if (inputRefs.current[0]) {
       inputRefs.current[0].focus();
@@ -17,24 +22,27 @@ export default function Pay() {
   }, []);
 
   const handlePinChange = (index: number, value: string) => {
-    
     if (!/^\d*$/.test(value)) return;
 
     const newPin = [...pin];
-    newPin[index] = value.slice(0, 1); 
+    newPin[index] = value.slice(0, 1);
     setPin(newPin);
 
-    
     if (value && index < 3) {
       inputRefs.current[index + 1]?.focus();
     }
+  };
+
+  const handleAmountChange = (value: string) => {
+    // digits only, optional single decimal point
+    if (!/^\d*\.?\d*$/.test(value)) return;
+    setAmount(value);
   };
 
   const handleKeyDown = (
     index: number,
     e: React.KeyboardEvent<HTMLInputElement>
   ) => {
-    
     if (e.key === "Backspace" && !pin[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
@@ -46,16 +54,18 @@ export default function Pay() {
     if (/^\d{4}$/.test(pastedData)) {
       const newPin = pastedData.split("");
       setPin(newPin);
-      // Focus the last input after paste
       inputRefs.current[3]?.focus();
     }
   };
 
   const handleConfirm = () => {
     const pinCode = pin.join("");
+    if (!amount || Number(amount) <= 0) {
+      alert("Please enter a valid amount");
+      return;
+    }
     if (pinCode.length === 4) {
-      alert(`PIN Entered: ${pinCode}`);
-      
+      alert(`Paying NGN ${amount} to ${recipientName} (Acc: ${user_id}) — PIN: ${pinCode}`);
     } else {
       alert("Please enter a complete 4-digit PIN");
     }
@@ -66,35 +76,42 @@ export default function Pay() {
       <NavBar />
 
       <div className="px-5 xl:px-20">
-        
+
         <div className="flex items-center gap-1 mt-5">
-                  <Link href="../Proxima/">
-                    <ChevronLeft size={15} className="text-primary-500 font-bold" />
-                  </Link>
-        
-                  <div className="bg-primary-100 w-50 p-2 flex flex-row items-center gap-2 rounded-md font-jetbrains text-primary-500 text-xs ">
-                    <CirclesThreePlus size={15} className="text-primary-500" weight="fill" />
-                    Confirm Transaction
-                  </div>
-                </div>
+          <Link href="../Proxima/">
+            <ChevronLeft size={15} className="text-primary-500 font-bold" />
+          </Link>
+
+          <div className="bg-primary-100 w-50 p-2 flex flex-row items-center gap-2 rounded-md font-jetbrains text-primary-500 text-xs ">
+            <CirclesThreePlus size={15} className="text-primary-500" weight="fill" />
+            Confirm Transaction
+          </div>
+        </div>
         <div className="mt-5 flex items-center justify-center">
           <div className="paymodal rounded-md bg-white px-5 py-1">
-            {/* <p className="text-xs font-bold">Confirm Transaction</p>
-
-            <hr className="mt-3 text-primary-100" /> */}
 
             <div className="flex items-start justify-between gap-10 mt-5">
               <div>
                 <p className="font-jetbrains text-xs">RECEPIENT</p>
-                <p className="font-bold text-xs">Sarah Adamu</p>
+                <p className="font-bold text-xs">{recipientName}</p>
                 <p className="text-neutral-700 text-xs">
-                  Acc:005677895.Proxima Bank
+                  Acc: {user_id}
                 </p>
               </div>
 
               <div>
                 <p className="font-jetbrains text-xs">Amount</p>
-                <p className="text-primary-500 font-bold">NGN 10,000</p>
+                <div className="flex items-center gap-1">
+                  <span className="text-primary-500 font-bold text-xs">NGN</span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={amount}
+                    onChange={(e) => handleAmountChange(e.target.value)}
+                    placeholder="0.00"
+                    className="text-primary-500 font-bold w-20 border-b border-primary-200 focus:outline-none focus:border-primary-500 bg-transparent"
+                  />
+                </div>
               </div>
             </div>
 
@@ -128,7 +145,6 @@ export default function Pay() {
               ENTER YOUR PIN TO CONFIRM
             </p>
 
-           
             <div className="flex justify-center gap-3 mt-3">
               {[0, 1, 2, 3].map((index) => (
                 <input
@@ -148,9 +164,6 @@ export default function Pay() {
                 />
               ))}
             </div>
-
-           
-           
 
             <div className="flex flex-col gap-2 mt-5 mb-5">
               <button

@@ -255,7 +255,10 @@ export default function Proxima() {
               </p>
             ) : (
               nearbyUsers.map((user) => (
-                <Link key={user.user_id} href={`/Pay/${user.user_id}`}>
+                <Link
+                  key={user.user_id}
+                  href={`/Pay/${user.user_id}?name=${encodeURIComponent(user.name)}`}
+                >
                   <FoundDevice
                     icon={User}
                     title={user.name}
