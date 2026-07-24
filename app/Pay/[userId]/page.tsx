@@ -129,13 +129,41 @@ export default function Pay() {
           router.push(`/success?txn_id=${result.transaction_id || transactionId}&user_id=${user_id}`);
         }, 2000);
       } else {
-        const errorMsg = result.detail || result.error || result.message || "Payment failed. Please try again.";
+        let errorMsg = "Payment failed. Please try again.";
+        
+        if (result.detail) {
+          errorMsg = result.detail;
+        } else if (result.error) {
+          errorMsg = result.error;
+        } else if (result.message) {
+          errorMsg = result.message;
+        } else if (typeof result === 'string') {
+          errorMsg = result;
+        } else {
+          errorMsg = JSON.stringify(result);
+        }
+        
         setError(errorMsg);
         console.error("Payment failed:", result);
       }
     } catch (err) {
       console.error("Payment error:", err);
-      setError(err instanceof Error ? err.message : "An unexpected error occurred. Please try again.");
+      
+      let errorMsg = "An unexpected error occurred. Please try again.";
+      
+      if (err instanceof Error) {
+        errorMsg = err.message;
+      } else if (typeof err === 'string') {
+        errorMsg = err;
+      } else if (err && typeof err === 'object') {
+        try {
+          errorMsg = JSON.stringify(err);
+        } catch {
+          errorMsg = "An unexpected error occurred";
+        }
+      }
+      
+      setError(errorMsg);
     } finally {
       setIsProcessing(false);
     }
@@ -211,20 +239,20 @@ export default function Pay() {
 
             <div className="flex items-start justify-between gap-10 mt-5">
               <div>
-                <p className="font-jetbrains text-xs text-neutral-500">RECIPIENT</p>
+                <p className="font-jetbrains text-xs text-neutral-800">RECIPIENT</p>
                 <p className="font-bold text-sm">{recipientName}</p>
                 <p className="text-neutral-700 text-xs">
                   Acc: {accountNumber}
                 </p>
                 {recipientId && (
-                  <p className="text-neutral-500 text-xs mt-1">
+                  <p className="text-neutral-800 text-xs mt-1">
                     ID: {recipientId}
                   </p>
                 )}
               </div>
 
               <div>
-                <p className="font-jetbrains text-xs text-neutral-500">Amount</p>
+                <p className="font-jetbrains text-xs text-neutral-800">Amount</p>
                 <div className="flex items-center gap-1">
                   <span className="text-primary-500 font-bold text-xs">NGN</span>
                   <input
@@ -242,7 +270,7 @@ export default function Pay() {
 
             <div className="flex items-start justify-between gap-5 mt-5">
               <div>
-                <p className="font-jetbrains text-xs text-neutral-500">
+                <p className="font-jetbrains text-xs text-neutral-800">
                   DATE/TIME
                 </p>
                 <p className="text-xs text-neutral-800">
@@ -260,7 +288,7 @@ export default function Pay() {
                 </p>
               </div>
               <div>
-                <p className="text-xs text-neutral-500">Tx Type</p>
+                <p className="text-xs text-neutral-800">Tx Type</p>
                 <p className="text-xs text-neutral-800">P2P Transfer</p>
               </div>
             </div>
