@@ -1,6 +1,5 @@
 "use client";
 
-
 import { useEffect, useState, useRef, useCallback } from "react";
 import NavBar from "@/components/NavBar";
 import { ChevronLeft } from "lucide-react";
@@ -17,37 +16,33 @@ import {
 import {
   pushLocation,
   fetchNearbyUsers,
-  NearbyUser,
 } from "@/lib/api/proximity";
+import { NearbyUser } from "@/lib/api/payment";
 import { notify } from "@/lib/stores/notifyStore";
 
 const GEO_MESSAGES: Record<GeoErrorCode, string> = {
-  PERMISSION_DENIED:    "Location access was denied. Enable it in your browser settings.",
+  PERMISSION_DENIED: "Location access was denied. Enable it in your browser settings.",
   POSITION_UNAVAILABLE: "Your location couldn't be determined. Check your signal.",
-  TIMEOUT:              "Getting your location is taking too long. Try moving to an open area.",
-  UNSUPPORTED:          "Geolocation isn't supported on this device.",
+  TIMEOUT: "Getting your location is taking too long. Try moving to an open area.",
+  UNSUPPORTED: "Geolocation isn't supported on this device.",
 };
 
 export default function Proxima() {
   const [nearbyUsers, setNearbyUsers] = useState<NearbyUser[]>([]);
-  const [isScanning, setIsScanning]   = useState(false);
-  const [geoError, setGeoError]       = useState<string | null>(null);
-  const [pushError, setPushError]     = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
+  const [pushError, setPushError] = useState<string | null>(null);
 
-  const watchIdRef      = useRef<number | null>(null);
+  const watchIdRef = useRef<number | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const wakeLockRef     = useRef<WakeLockSentinel | null>(null);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
-  // ── Wake Lock ─────────────────────────────────────────────────────────────
-  // Prevents the OS from suspending the tab/GPS on mobile.
-  // Re-acquired on visibility change because wake locks are released automatically
-  // when the tab goes to the background.
   const acquireWakeLock = useCallback(async () => {
     if (!("wakeLock" in navigator)) return;
     try {
       wakeLockRef.current = await (navigator as any).wakeLock.request("screen");
     } catch {
-      // Non-fatal — wake lock is a best-effort enhancement
+      // Non-fatal
     }
   }, []);
 
@@ -60,9 +55,6 @@ export default function Proxima() {
     }
   }, []);
 
-  // ── Push last known position ──────────────────────────────────────────────
-  // Used by the poll tick and visibility handler to keep the server ping fresh
-  // even when watchPosition hasn't fired recently (GPS stall, backgrounded tab).
   const pushLastKnown = useCallback(async () => {
     const pos = getLastKnownPosition();
     if (!pos) return;
@@ -75,16 +67,9 @@ export default function Proxima() {
     }
   }, []);
 
-  // ── Poll ──────────────────────────────────────────────────────────────────
   const pollNow = useCallback(async () => {
-    // Don't fire stale queued polls when the tab comes back from background
     if (document.visibilityState !== "visible") return;
-
-    // Push last known position on every poll tick to keep the server ping fresh.
-    // This is the key mobile fix: even if watchPosition stalls, the ping won't
-    // go stale as long as we have a cached position.
     await pushLastKnown();
-
     try {
       const users = await fetchNearbyUsers();
       setNearbyUsers(users);
@@ -93,7 +78,6 @@ export default function Proxima() {
     }
   }, [pushLastKnown]);
 
-  // ── Teardown ──────────────────────────────────────────────────────────────
   const stopAll = useCallback(() => {
     stopLocationTracking(watchIdRef.current);
     watchIdRef.current = null;
@@ -103,7 +87,6 @@ export default function Proxima() {
     setIsScanning(false);
   }, [releaseWakeLock]);
 
-  // ── Start scanning ────────────────────────────────────────────────────────
   const startScanning = useCallback(() => {
     if (!localStorage.getItem("token")) {
       setPushError("You're not signed in. Please log in and try again.");
@@ -150,26 +133,19 @@ export default function Proxima() {
     }
 
     watchIdRef.current = watchId;
-
-    // Immediate first poll — don't wait 5 s for the interval
     pollNow();
     pollIntervalRef.current = setInterval(pollNow, 5_000);
   }, [stopAll, pollNow, acquireWakeLock]);
 
-  // ── Mount / unmount ───────────────────────────────────────────────────────
   useEffect(() => {
     startScanning();
     return stopAll;
   }, [startScanning, stopAll]);
 
-  // ── Visibility & focus recovery ───────────────────────────────────────────
   useEffect(() => {
     const onVisible = async () => {
       if (document.visibilityState === "visible") {
-        // Re-acquire wake lock (OS releases it when tab goes background)
         await acquireWakeLock();
-        // Push immediately so the ping doesn't sit stale while we were away,
-        // then fetch so the list repopulates without waiting for the interval
         await pushLastKnown();
         pollNow();
       }
@@ -185,7 +161,6 @@ export default function Proxima() {
     };
   }, [pollNow, pushLastKnown, acquireWakeLock]);
 
-  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <>
       <NavBar />
@@ -257,7 +232,7 @@ export default function Proxima() {
               nearbyUsers.map((user) => (
                 <Link
                   key={user.user_id}
-                  href={`/Pay/${user.user_id}?name=${encodeURIComponent(user.name)}`}
+                  href={`/Pay/${user.user_id}?name=${encodeURIComponent(user.name)}&recipient_id=${encodeURIComponent(user.user_id)}&mandate_id=${encodeURIComponent(user.mandate_id || '')}`}
                 >
                   <FoundDevice
                     icon={User}
