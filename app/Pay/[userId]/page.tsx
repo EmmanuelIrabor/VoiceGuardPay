@@ -7,7 +7,6 @@ import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { CirclesThreePlus } from "phosphor-react";
 import { paymentService } from "@/lib/api/payment";
 
-// Generate a random transaction ID
 function generateTransactionId(): string {
   const prefix = "VG";
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -18,7 +17,6 @@ function generateTransactionId(): string {
   return `${prefix}-${result.slice(0, 4)}-${result.slice(4, 8)}-${result.slice(8, 10)}`;
 }
 
-// Generate a random account number
 function generateAccountNumber(): string {
   const first = Math.floor(Math.random() * 9) + 1;
   const rest = Math.floor(Math.random() * 100000000)
@@ -35,7 +33,6 @@ export default function Pay() {
   const recipientId = searchParams.get("recipient_id") ?? "";
   const mandateId = searchParams.get("mandate_id") ?? "";
 
-  // State
   const [accountNumber] = useState(generateAccountNumber);
   const [transactionId] = useState(generateTransactionId);
   const [pin, setPin] = useState(["", "", "", ""]);
@@ -43,36 +40,31 @@ export default function Pay() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [isCreatingMandate, setIsCreatingMandate] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Auto-focus first PIN input
   useEffect(() => {
     if (inputRefs.current[0]) {
       inputRefs.current[0].focus();
     }
   }, []);
 
-  // Handle PIN change
   const handlePinChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
-
     const newPin = [...pin];
     newPin[index] = value.slice(0, 1);
     setPin(newPin);
-
     if (value && index < 3) {
       inputRefs.current[index + 1]?.focus();
     }
   };
 
-  // Handle amount change
   const handleAmountChange = (value: string) => {
     if (!/^\d*\.?\d*$/.test(value)) return;
     setAmount(value);
-    setError(""); // Clear error when user types
+    setError("");
   };
 
-  // Handle keyboard navigation
   const handleKeyDown = (
     index: number,
     e: React.KeyboardEvent<HTMLInputElement>
@@ -82,7 +74,6 @@ export default function Pay() {
     }
   };
 
-  // Handle paste for PIN
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData("text").slice(0, 4);
@@ -93,49 +84,60 @@ export default function Pay() {
     }
   };
 
-  // Format amount for display
   const formatAmount = (value: string) => {
     const num = parseFloat(value);
     return isNaN(num) ? "0.00" : num.toFixed(2);
   };
 
-  // Handle payment confirmation using paymentService
-  const handleConfirm = async () => {
-    // Validate amount
-    const amountNum = parseFloat(amount);
-    if (!amount || isNaN(amountNum) || amountNum <= 0) {
-      setError("Please enter a valid amount");
-      return;
-    }
-
-    // Validate PIN
-    const pinCode = pin.join("");
-    if (pinCode.length !== 4) {
-      setError("Please enter a complete 4-digit PIN");
-      return;
-    }
-
-    // Validate mandate ID
-    if (!mandateId) {
-      setError("No mandate found. Please create a mandate first.");
-      return;
-    }
-
-    // Clear previous errors
-    setError("");
-    setIsProcessing(true);
-
+  const createMandateAndPay = async (amountNum: number, pinCode: string) => {
     try {
-      console.log("Initiating payment...", {
-        mandateId,
+      setIsCreatingMandate(true);
+      
+      const userData = JSON.parse(localStorage.getItem("user") || "{}");
+      
+      const mandateData = {
+        customer_name: userData.name || recipientName,
+        customer_email: userData.email || "user@example.com",
+        customer_phone: userData.phone || "+2348012345678",
+        account_number: accountNumber,
+        bank_code: "058",
+        account_name: userData.name || recipientName,
         amount: amountNum,
-        narration: `Payment to ${recipientName}`,
-        userId: user_id,
-        recipientId: recipientId,
-        transactionId: transactionId
-      });
+        frequency: "MONTHLY",
+        start_date: new Date().toISOString().split("T")[0],
+      };
 
-      // USING THE PAYMENT SERVICE
+      console.log("Creating mandate...", mandateData);
+      
+      const mandateResult = await paymentService.createMandate(mandateData);
+      
+      console.log("Mandate result:", mandateResult);
+      
+      if (!mandateResult.success) {
+        throw new Error(mandateResult.error || "Failed to create mandate");
+      }
+      
+      const newMandateId = mandateResult.mandate_id;
+      
+      if (!newMandateId) {
+        throw new Error("No mandate ID returned");
+      }
+      
+      console.log("Mandate created successfully:", newMandateId);
+      
+      await initiatePayment(newMandateId, amountNum);
+      
+    } catch (err) {
+      console.error("Create mandate error:", err);
+      setError(err instanceof Error ? err.message : "Failed to create mandate");
+      setIsCreatingMandate(false);
+    }
+  };
+
+  const initiatePayment = async (mandateId: string, amountNum: number) => {
+    try {
+      console.log("Initiating payment with mandate:", mandateId);
+      
       const result = await paymentService.initiateCollection(mandateId, {
         amount: amountNum,
         narration: `Payment to ${recipientName}`,
@@ -144,40 +146,63 @@ export default function Pay() {
       console.log("Payment result:", result);
 
       if (result.success) {
-        // Payment successful
         setSuccess(true);
         setError("");
         
-        // Show success message
         alert(`Payment of NGN ${formatAmount(amount)} to ${recipientName} successful!`);
         
-        // Redirect to success page or dashboard
         setTimeout(() => {
           router.push(`/success?txn_id=${transactionId}&user_id=${user_id}`);
         }, 2000);
       } else {
-        // Payment failed
         const errorMsg = result.error || result.detail || "Payment failed. Please try again.";
         setError(errorMsg);
         console.error("Payment failed:", result);
       }
     } catch (err) {
       console.error("Payment error:", err);
-      
-      // Handle specific error types
-      if (err instanceof TypeError && err.message.includes("fetch")) {
-        setError("Network error. Please check your connection.");
-      } else if (err instanceof Error) {
-        setError(err.message || "An unexpected error occurred. Please try again.");
+      if (err instanceof Error) {
+        setError(err.message);
       } else {
         setError("An unexpected error occurred. Please try again.");
       }
     } finally {
       setIsProcessing(false);
+      setIsCreatingMandate(false);
     }
   };
 
-  // Simulate payment for testing (only in development)
+  const handleConfirm = async () => {
+    const amountNum = parseFloat(amount);
+    if (!amount || isNaN(amountNum) || amountNum <= 0) {
+      setError("Please enter a valid amount");
+      return;
+    }
+
+    const pinCode = pin.join("");
+    if (pinCode.length !== 4) {
+      setError("Please enter a complete 4-digit PIN");
+      return;
+    }
+
+    setError("");
+    setIsProcessing(true);
+
+    try {
+      if (mandateId) {
+        // Use existing mandate
+        await initiatePayment(mandateId, amountNum);
+      } else {
+        // Create a new mandate first
+        await createMandateAndPay(amountNum, pinCode);
+      }
+    } catch (err) {
+      console.error("Handle confirm error:", err);
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+      setIsProcessing(false);
+    }
+  };
+
   const handleSimulatePayment = () => {
     const amountNum = parseFloat(amount);
     const pinCode = pin.join("");
@@ -195,7 +220,6 @@ export default function Pay() {
     setError("");
     setIsProcessing(true);
 
-    // Simulate API call delay
     setTimeout(() => {
       console.log("=== Payment Details (SIMULATION) ===");
       console.log(`Transaction ID: ${transactionId}`);
@@ -212,7 +236,6 @@ export default function Pay() {
       setIsProcessing(false);
       setSuccess(true);
       
-      // Redirect to dashboard
       setTimeout(() => {
         router.push(`/dashboard?user_id=${user_id}`);
       }, 2000);
@@ -237,21 +260,24 @@ export default function Pay() {
 
         <div className="mt-5 flex items-center justify-center">
           <div className="paymodal rounded-md bg-white px-5 py-1 max-w-md w-full">
-            {/* Error Message */}
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-md text-xs mb-4">
                 {error}
               </div>
             )}
 
-            {/* Success Message */}
             {success && (
               <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-md text-xs mb-4">
                 Payment successful! Redirecting...
               </div>
             )}
 
-            {/* Recipient and Amount */}
+            {isCreatingMandate && (
+              <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded-md text-xs mb-4">
+                Creating mandate... Please wait.
+              </div>
+            )}
+
             <div className="flex items-start justify-between gap-10 mt-5">
               <div>
                 <p className="font-jetbrains text-xs text-neutral-500">RECIPIENT</p>
@@ -262,6 +288,11 @@ export default function Pay() {
                 {recipientId && (
                   <p className="text-neutral-500 text-xs mt-1">
                     ID: {recipientId}
+                  </p>
+                )}
+                {mandateId && (
+                  <p className="text-green-600 text-xs mt-1">
+                    ✅ Mandate: {mandateId.slice(0, 8)}...
                   </p>
                 )}
               </div>
@@ -276,14 +307,13 @@ export default function Pay() {
                     value={amount}
                     onChange={(e) => handleAmountChange(e.target.value)}
                     placeholder="0.00"
-                    disabled={isProcessing || success}
+                    disabled={isProcessing || success || isCreatingMandate}
                     className="text-primary-500 font-bold w-20 border-b border-primary-200 focus:outline-none focus:border-primary-500 bg-transparent disabled:opacity-50"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Transaction Details */}
             <div className="flex items-start justify-between gap-5 mt-5">
               <div>
                 <p className="font-jetbrains text-xs text-neutral-500">
@@ -309,7 +339,6 @@ export default function Pay() {
               </div>
             </div>
 
-            {/* Transaction ID */}
             <div className="bg-secondary-100 p-2 rounded-sm mt-5">
               <div className="flex items-center gap-10 justify-between">
                 <p className="text-xs text-neutral-900 font-mono">
@@ -322,7 +351,6 @@ export default function Pay() {
               </p>
             </div>
 
-            {/* PIN Input */}
             <p className="mt-5 text-xs font-jetbrains text-center text-neutral-600">
               ENTER YOUR PIN TO CONFIRM
             </p>
@@ -340,7 +368,7 @@ export default function Pay() {
                   onChange={(e) => handlePinChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
                   onPaste={handlePaste}
-                  disabled={isProcessing || success}
+                  disabled={isProcessing || success || isCreatingMandate}
                   className="w-10 h-12 text-center text-xl font-bold border-2 border-neutral-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition-all disabled:opacity-50 rounded"
                   inputMode="numeric"
                   pattern="[0-9]*"
@@ -348,16 +376,19 @@ export default function Pay() {
               ))}
             </div>
 
-            {/* Action Buttons */}
             <div className="flex flex-col gap-2 mt-5 mb-5">
               <button
                 onClick={handleConfirm}
-                disabled={isProcessing || success}
+                disabled={isProcessing || success || isCreatingMandate}
                 className={`btn-dark text-xs flex items-center justify-center gap-1 font-bold ${
-                  isProcessing || success ? "opacity-50 cursor-not-allowed" : ""
+                  isProcessing || success || isCreatingMandate ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               >
-                {isProcessing ? (
+                {isCreatingMandate ? (
+                  <>
+                    <span className="animate-spin">⟳</span> Creating Mandate...
+                  </>
+                ) : isProcessing ? (
                   <>
                     <span className="animate-spin">⟳</span> Processing...
                   </>
@@ -370,11 +401,10 @@ export default function Pay() {
                 )}
               </button>
 
-              {/* Show simulate button only in development */}
               {process.env.NODE_ENV === "development" && (
                 <button
                   onClick={handleSimulatePayment}
-                  disabled={isProcessing || success}
+                  disabled={isProcessing || success || isCreatingMandate}
                   className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-md font-jetbrains transition-all disabled:opacity-50"
                 >
                   🧪 Simulate Payment (Dev)
@@ -389,13 +419,12 @@ export default function Pay() {
               </Link>
             </div>
 
-            {/* Debug Info (only in development) */}
             {process.env.NODE_ENV === "development" && (
               <div className="mt-3 p-2 bg-gray-50 rounded text-xs text-gray-500 font-mono">
                 <p className="font-bold mb-1">Debug Info:</p>
                 <p>User ID: {user_id}</p>
                 <p>Recipient ID: {recipientId}</p>
-                <p>Mandate ID: {mandateId || "❌ Missing"}</p>
+                <p>Mandate ID: {mandateId || "❌ Will be created"}</p>
                 <p>Amount: {amount || "0.00"}</p>
                 <p>PIN: {pin.join("") || "____"}</p>
                 <p>Account: {accountNumber}</p>
