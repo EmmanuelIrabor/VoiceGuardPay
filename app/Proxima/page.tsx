@@ -16,8 +16,8 @@ import {
 import {
   pushLocation,
   fetchNearbyUsers,
+  NearbyUser,
 } from "@/lib/api/proximity";
-import { NearbyUser } from "@/lib/api/payment";
 import { notify } from "@/lib/stores/notifyStore";
 
 const GEO_MESSAGES: Record<GeoErrorCode, string> = {
@@ -232,7 +232,7 @@ export default function Proxima() {
               nearbyUsers.map((user) => (
                 <Link
                   key={user.user_id}
-                  href={`/Pay/${user.user_id}?name=${encodeURIComponent(user.name)}&recipient_id=${encodeURIComponent(user.user_id)}&mandate_id=${encodeURIComponent(user.mandate_id || '')}`}
+                  href={`/Pay/${user.user_id}?name=${encodeURIComponent(user.name)}&recipient_id=${encodeURIComponent(user.user_id)}`}
                 >
                   <FoundDevice
                     icon={User}

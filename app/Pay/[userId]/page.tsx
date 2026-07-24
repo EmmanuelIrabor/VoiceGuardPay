@@ -31,7 +31,6 @@ export default function Pay() {
   const searchParams = useSearchParams();
   const recipientName = searchParams.get("name") ?? "Unknown";
   const recipientId = searchParams.get("recipient_id") ?? "";
-  const mandateId = searchParams.get("mandate_id") ?? "";
 
   const [accountNumber] = useState(generateAccountNumber);
   const [transactionId] = useState(generateTransactionId);
@@ -40,7 +39,6 @@ export default function Pay() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [isCreatingMandate, setIsCreatingMandate] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -89,89 +87,6 @@ export default function Pay() {
     return isNaN(num) ? "0.00" : num.toFixed(2);
   };
 
-  const createMandateAndPay = async (amountNum: number, pinCode: string) => {
-    try {
-      setIsCreatingMandate(true);
-      
-      const userData = JSON.parse(localStorage.getItem("user") || "{}");
-      
-      const mandateData = {
-        customer_name: userData.name || recipientName,
-        customer_email: userData.email || "user@example.com",
-        customer_phone: userData.phone || "+2348012345678",
-        account_number: accountNumber,
-        bank_code: "058",
-        account_name: userData.name || recipientName,
-        amount: amountNum,
-        frequency: "MONTHLY",
-        start_date: new Date().toISOString().split("T")[0],
-      };
-
-      console.log("Creating mandate...", mandateData);
-      
-      const mandateResult = await paymentService.createMandate(mandateData);
-      
-      console.log("Mandate result:", mandateResult);
-      
-      if (!mandateResult.success) {
-        throw new Error(mandateResult.error || "Failed to create mandate");
-      }
-      
-      const newMandateId = mandateResult.mandate_id;
-      
-      if (!newMandateId) {
-        throw new Error("No mandate ID returned");
-      }
-      
-      console.log("Mandate created successfully:", newMandateId);
-      
-      await initiatePayment(newMandateId, amountNum);
-      
-    } catch (err) {
-      console.error("Create mandate error:", err);
-      setError(err instanceof Error ? err.message : "Failed to create mandate");
-      setIsCreatingMandate(false);
-    }
-  };
-
-  const initiatePayment = async (mandateId: string, amountNum: number) => {
-    try {
-      console.log("Initiating payment with mandate:", mandateId);
-      
-      const result = await paymentService.initiateCollection(mandateId, {
-        amount: amountNum,
-        narration: `Payment to ${recipientName}`,
-      });
-
-      console.log("Payment result:", result);
-
-      if (result.success) {
-        setSuccess(true);
-        setError("");
-        
-        alert(`Payment of NGN ${formatAmount(amount)} to ${recipientName} successful!`);
-        
-        setTimeout(() => {
-          router.push(`/success?txn_id=${transactionId}&user_id=${user_id}`);
-        }, 2000);
-      } else {
-        const errorMsg = result.error || result.detail || "Payment failed. Please try again.";
-        setError(errorMsg);
-        console.error("Payment failed:", result);
-      }
-    } catch (err) {
-      console.error("Payment error:", err);
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("An unexpected error occurred. Please try again.");
-      }
-    } finally {
-      setIsProcessing(false);
-      setIsCreatingMandate(false);
-    }
-  };
-
   const handleConfirm = async () => {
     const amountNum = parseFloat(amount);
     if (!amount || isNaN(amountNum) || amountNum <= 0) {
@@ -185,20 +100,43 @@ export default function Pay() {
       return;
     }
 
+    if (!recipientId) {
+      setError("No recipient selected");
+      return;
+    }
+
     setError("");
     setIsProcessing(true);
 
     try {
-      if (mandateId) {
-        // Use existing mandate
-        await initiatePayment(mandateId, amountNum);
+      const result = await paymentService.initiatePayment({
+        amount: amountNum,
+        narration: `Payment to ${recipientName}`,
+        recipient_id: recipientId,
+        sender_id: user_id,
+        pin: pinCode,
+      });
+
+      console.log("Payment result:", result);
+
+      if (result.success) {
+        setSuccess(true);
+        setError("");
+        
+        alert(`Payment of NGN ${formatAmount(amount)} to ${recipientName} successful!`);
+        
+        setTimeout(() => {
+          router.push(`/success?txn_id=${result.transaction_id || transactionId}&user_id=${user_id}`);
+        }, 2000);
       } else {
-        // Create a new mandate first
-        await createMandateAndPay(amountNum, pinCode);
+        const errorMsg = result.detail || result.error || result.message || "Payment failed. Please try again.";
+        setError(errorMsg);
+        console.error("Payment failed:", result);
       }
     } catch (err) {
-      console.error("Handle confirm error:", err);
-      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+      console.error("Payment error:", err);
+      setError(err instanceof Error ? err.message : "An unexpected error occurred. Please try again.");
+    } finally {
       setIsProcessing(false);
     }
   };
@@ -225,10 +163,9 @@ export default function Pay() {
       console.log(`Transaction ID: ${transactionId}`);
       console.log(`Amount: NGN ${formatAmount(amount)}`);
       console.log(`Recipient: ${recipientName}`);
-      console.log(`Account: ${accountNumber}`);
-      console.log(`PIN: ${pinCode}`);
-      console.log(`User ID: ${user_id}`);
       console.log(`Recipient ID: ${recipientId}`);
+      console.log(`User ID: ${user_id}`);
+      console.log(`PIN: ${pinCode}`);
       console.log("====================================");
 
       alert(`✅ Payment Successful!\n\nNGN ${formatAmount(amount)} sent to ${recipientName}\nTransaction ID: ${transactionId}`);
@@ -272,12 +209,6 @@ export default function Pay() {
               </div>
             )}
 
-            {isCreatingMandate && (
-              <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded-md text-xs mb-4">
-                Creating mandate... Please wait.
-              </div>
-            )}
-
             <div className="flex items-start justify-between gap-10 mt-5">
               <div>
                 <p className="font-jetbrains text-xs text-neutral-500">RECIPIENT</p>
@@ -288,11 +219,6 @@ export default function Pay() {
                 {recipientId && (
                   <p className="text-neutral-500 text-xs mt-1">
                     ID: {recipientId}
-                  </p>
-                )}
-                {mandateId && (
-                  <p className="text-green-600 text-xs mt-1">
-                    ✅ Mandate: {mandateId.slice(0, 8)}...
                   </p>
                 )}
               </div>
@@ -307,7 +233,7 @@ export default function Pay() {
                     value={amount}
                     onChange={(e) => handleAmountChange(e.target.value)}
                     placeholder="0.00"
-                    disabled={isProcessing || success || isCreatingMandate}
+                    disabled={isProcessing || success}
                     className="text-primary-500 font-bold w-20 border-b border-primary-200 focus:outline-none focus:border-primary-500 bg-transparent disabled:opacity-50"
                   />
                 </div>
@@ -335,7 +261,7 @@ export default function Pay() {
               </div>
               <div>
                 <p className="text-xs text-neutral-500">Tx Type</p>
-                <p className="text-xs text-neutral-800">Internal Transfer</p>
+                <p className="text-xs text-neutral-800">P2P Transfer</p>
               </div>
             </div>
 
@@ -368,7 +294,7 @@ export default function Pay() {
                   onChange={(e) => handlePinChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
                   onPaste={handlePaste}
-                  disabled={isProcessing || success || isCreatingMandate}
+                  disabled={isProcessing || success}
                   className="w-10 h-12 text-center text-xl font-bold border-2 border-neutral-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition-all disabled:opacity-50 rounded"
                   inputMode="numeric"
                   pattern="[0-9]*"
@@ -379,16 +305,12 @@ export default function Pay() {
             <div className="flex flex-col gap-2 mt-5 mb-5">
               <button
                 onClick={handleConfirm}
-                disabled={isProcessing || success || isCreatingMandate}
+                disabled={isProcessing || success}
                 className={`btn-dark text-xs flex items-center justify-center gap-1 font-bold ${
-                  isProcessing || success || isCreatingMandate ? "opacity-50 cursor-not-allowed" : ""
+                  isProcessing || success ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               >
-                {isCreatingMandate ? (
-                  <>
-                    <span className="animate-spin">⟳</span> Creating Mandate...
-                  </>
-                ) : isProcessing ? (
+                {isProcessing ? (
                   <>
                     <span className="animate-spin">⟳</span> Processing...
                   </>
@@ -404,7 +326,7 @@ export default function Pay() {
               {process.env.NODE_ENV === "development" && (
                 <button
                   onClick={handleSimulatePayment}
-                  disabled={isProcessing || success || isCreatingMandate}
+                  disabled={isProcessing || success}
                   className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-md font-jetbrains transition-all disabled:opacity-50"
                 >
                   🧪 Simulate Payment (Dev)
@@ -424,10 +346,8 @@ export default function Pay() {
                 <p className="font-bold mb-1">Debug Info:</p>
                 <p>User ID: {user_id}</p>
                 <p>Recipient ID: {recipientId}</p>
-                <p>Mandate ID: {mandateId || "❌ Will be created"}</p>
                 <p>Amount: {amount || "0.00"}</p>
                 <p>PIN: {pin.join("") || "____"}</p>
-                <p>Account: {accountNumber}</p>
                 <p>API URL: {process.env.NEXT_PUBLIC_API_URL}</p>
                 <p>Token: {localStorage.getItem("token") ? "✅ Present" : "❌ Missing"}</p>
               </div>
