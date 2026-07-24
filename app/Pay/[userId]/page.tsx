@@ -6,10 +6,22 @@ import { useState, useRef, useEffect } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { CirclesThreePlus } from "phosphor-react";
 
+function generateAccountNumber(): string {
+  // 9-digit numeric, first digit non-zero so it always reads as 9 digits
+  const first = Math.floor(Math.random() * 9) + 1;
+  const rest = Math.floor(Math.random() * 1_00000000)
+    .toString()
+    .padStart(8, "0");
+  return `${first}${rest}`;
+}
+
 export default function Pay() {
   const { user_id } = useParams<{ user_id: string }>();
   const searchParams = useSearchParams();
   const recipientName = searchParams.get("name") ?? "Unknown";
+
+  // Generated once when the page mounts, stable across re-renders
+  const [accountNumber] = useState(generateAccountNumber);
 
   const [pin, setPin] = useState(["", "", "", ""]);
   const [amount, setAmount] = useState("");
@@ -34,7 +46,6 @@ export default function Pay() {
   };
 
   const handleAmountChange = (value: string) => {
-    // digits only, optional single decimal point
     if (!/^\d*\.?\d*$/.test(value)) return;
     setAmount(value);
   };
@@ -65,7 +76,7 @@ export default function Pay() {
       return;
     }
     if (pinCode.length === 4) {
-      alert(`Paying NGN ${amount} to ${recipientName} (Acc: ${user_id}) — PIN: ${pinCode}`);
+      alert(`Paying NGN ${amount} to ${recipientName} (Acc: ${accountNumber}) — PIN: ${pinCode}`);
     } else {
       alert("Please enter a complete 4-digit PIN");
     }
@@ -95,7 +106,7 @@ export default function Pay() {
                 <p className="font-jetbrains text-xs">RECEPIENT</p>
                 <p className="font-bold text-xs">{recipientName}</p>
                 <p className="text-neutral-700 text-xs">
-                  Acc: {user_id}
+                  Acc: {accountNumber}
                 </p>
               </div>
 
