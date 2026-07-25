@@ -76,11 +76,50 @@ export default function Pay() {
       return;
     }
     if (pinCode.length === 4) {
-      alert(`Paying NGN ${amount} to ${recipientName} (Acc: ${accountNumber}) — PIN: ${pinCode}`);
+      // alert(`Paying NGN ${amount} to ${recipientName} (Acc: ${accountNumber}) — PIN: ${pinCode}`);
+      alert(`Transaction successful! , sent NGN ${amount} to ${recipientName} (Acc: ${accountNumber})`);
     } else {
       alert("Please enter a complete 4-digit PIN");
     }
   };
+
+  async function handleTransfer() {
+    const res = await fetch("https://prod-securepay-api.getsecurepay.ai/api/DirectDebit/fund-transfer'", {
+      method: "POST",
+      headers: {
+        "Accept": "text/plain",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        'sourceInstitutionCode': '000015',
+        'amount': '1000',
+        'beneficiaryAccountName': 'Mohammed Babatunde',
+        'beneficiaryAccountNumber': '8054493740',
+        'beneficiaryBankVerificationNumber': '22697143747',
+        'beneficiaryKYCLevel': 0,
+        'channelCode': 0,
+        'originatorAccountName': 'Erunmwunse Emmanuel Irabor',
+        'originatorAccountNumber': '2283178793',
+        'originatorBankVerificationNumber': '22552018428',
+        'originatorKYCLevel': 0,
+        'destinationInstitutionCode': '100004',
+        'mandateReferenceNumber': 'mandateReferenceNumber',
+        'nameEnquiryRef': 'nameEnquiryRef',
+        'originatorNarration': 'originatorNarration',
+        'paymentReference': 'paymentReference',
+        'transactionId': 'transactionId',
+        'transactionLocation': 'transactionLocation',
+        'beneficiaryNarration': 'trf',
+        'billerId': '4024031',
+        'initiatorAccountNumber': 'initiatorAccountNumber',
+        'initiatorAccountName': 'initiatorAccountName',
+      }),
+    });
+
+    const text = await res.text();
+  }
+
+  
 
   return (
     <>
